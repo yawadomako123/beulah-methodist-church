@@ -92,7 +92,7 @@ export default async function DashboardPage() {
       <PageHeader title={`${greeting(hour)}, ${user.name.split(" ")[0]}`} description={`Welcome to ${s.churchName}`} />
 
       {pendingUsers > 0 && (
-        <Link href="/admin/users" className="mb-6 flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-5 py-3 text-sm text-amber-900 hover:bg-amber-100">
+        <Link href="/admin" className="mb-6 flex items-center gap-3 rounded-xl border border-amber-300 bg-amber-50 px-5 py-3 text-sm text-amber-900 hover:bg-amber-100">
           <UserCheck className="size-5" />
           {pendingUsers} {pendingUsers === 1 ? "person is" : "people are"} waiting for account approval. Review now →
         </Link>

@@ -7,6 +7,7 @@ import {
   HandCoins,
   Home,
   LayoutDashboard,
+  LayoutGrid,
   Mail,
   Megaphone,
   Menu,
@@ -34,6 +35,7 @@ const ICONS = {
   messages: Mail,
   reports: BarChart3,
   me: UserRound,
+  admin: LayoutGrid,
   users: ShieldCheck,
   settings: Settings,
   audit: ScrollText,
@@ -42,10 +44,20 @@ const ICONS = {
 export type NavItem = { href: string; label: string; icon: keyof typeof ICONS; section?: string; short?: string };
 
 /** Order in which items earn a place in the phone tab bar (first four the user can access). */
-const TAB_PRIORITY = ["/dashboard", "/members", "/events", "/giving", "/groups", "/announcements", "/me"];
+const TAB_PRIORITY = ["/dashboard", "/members", "/events", "/admin", "/giving", "/groups", "/announcements", "/me"];
 
 function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(href + "/");
+}
+
+function CountBadge({ n, className }: { n?: number; className?: string }) {
+  if (!n) return null;
+  return (
+    <span className={clsx("min-w-5 rounded-full bg-accent-500 px-1.5 text-center text-[11px] leading-5 font-semibold text-white", className)}>
+      {n > 99 ? "99+" : n}
+      <span className="sr-only"> waiting</span>
+    </span>
+  );
 }
 
 function Logo({ size = 36 }: { size?: number }) {
@@ -53,9 +65,23 @@ function Logo({ size = 36 }: { size?: number }) {
   return <img src="/logo.png" alt="" width={size} height={size} className="shrink-0" style={{ width: size, height: size }} />;
 }
 
-export function AppNav({ items, churchName, footer }: { items: NavItem[]; churchName: string; footer: ReactNode }) {
+export function AppNav({
+  items,
+  churchName,
+  footer,
+  badges = {},
+}: {
+  items: NavItem[];
+  churchName: string;
+  footer: ReactNode;
+  badges?: Record<string, number>;
+}) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  // Highlight only the most specific match (e.g. "Users & roles", not also "Admin centre").
+  const activeHref = items
+    .filter((i) => isActive(pathname, i.href))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
 
   // Close the drawer on navigation and on Escape; lock page scroll while it is open.
   useEffect(() => setOpen(false), [pathname]);
@@ -95,7 +121,7 @@ export function AppNav({ items, churchName, footer }: { items: NavItem[]; church
             <ul className="space-y-0.5">
               {list.map((item) => {
                 const Icon = ICONS[item.icon];
-                const active = isActive(pathname, item.href);
+                const active = item.href === activeHref;
                 return (
                   <li key={item.href}>
                     <Link
@@ -108,7 +134,8 @@ export function AppNav({ items, churchName, footer }: { items: NavItem[]; church
                     >
                       {active && <span className="absolute inset-y-1.5 left-0 w-1 rounded-r-full bg-gold-400" aria-hidden />}
                       <Icon className={clsx("size-4.5 shrink-0", active && "text-gold-400")} />
-                      {item.label}
+                      <span className="flex-1">{item.label}</span>
+                      <CountBadge n={badges[item.href]} />
                     </Link>
                   </li>
                 );
@@ -187,8 +214,9 @@ export function AppNav({ items, churchName, footer }: { items: NavItem[]; church
                   aria-current={active ? "page" : undefined}
                   className={clsx("flex flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px] font-medium", active ? "text-brand-700" : "text-slate-500")}
                 >
-                  <span className={clsx("flex h-7 w-12 items-center justify-center rounded-full transition", active && "bg-gold-400/80")}>
+                  <span className={clsx("relative flex h-7 w-12 items-center justify-center rounded-full transition", active && "bg-gold-400/80")}>
                     <Icon className="size-5" />
+                    <CountBadge n={badges[t.href]} className="absolute -top-1.5 -right-1" />
                   </span>
                   {t.short ?? t.label}
                 </Link>
@@ -201,8 +229,12 @@ export function AppNav({ items, churchName, footer }: { items: NavItem[]; church
               onClick={() => setOpen(true)}
               className={clsx("flex w-full flex-col items-center gap-0.5 pt-2 pb-1.5 text-[11px] font-medium", moreActive ? "text-brand-700" : "text-slate-500")}
             >
-              <span className={clsx("flex h-7 w-12 items-center justify-center rounded-full", moreActive && "bg-gold-400/80")}>
+              <span className={clsx("relative flex h-7 w-12 items-center justify-center rounded-full", moreActive && "bg-gold-400/80")}>
                 <Menu className="size-5" />
+                {/* Dot when something needing attention lives behind "More". */}
+                {Object.entries(badges).some(([href, n]) => n > 0 && !tabs.some((t) => t.href === href || href.startsWith(t.href + "/"))) && (
+                  <span className="absolute top-0 right-2 size-2.5 rounded-full bg-accent-500 ring-2 ring-white" />
+                )}
               </span>
               More
             </button>

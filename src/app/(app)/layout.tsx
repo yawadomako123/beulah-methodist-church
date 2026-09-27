@@ -1,6 +1,7 @@
 import { AppNav, type NavItem } from "@/components/app-nav";
 import { SignOutButton } from "@/components/sign-out-button";
 import { Avatar } from "@/components/ui";
+import { pendingCount } from "@/lib/admin";
 import { can, ROLE_LABELS, type Permission } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { getSettings } from "@/lib/settings";
@@ -16,6 +17,7 @@ const NAV: (NavItem & { permission?: Permission })[] = [
   { href: "/giving", label: "Giving", icon: "giving", section: "Finance", permission: "giving:view" },
   { href: "/reports", label: "Reports", icon: "reports", section: "Finance", permission: "reports:view" },
   { href: "/me", label: "My profile", short: "Profile", icon: "me", section: "Me" },
+  { href: "/admin", label: "Admin centre", short: "Admin", icon: "admin", section: "Administration", permission: "users:manage" },
   { href: "/admin/users", label: "Users & roles", icon: "users", section: "Administration", permission: "users:manage" },
   { href: "/admin/settings", label: "Settings", icon: "settings", section: "Administration", permission: "settings:manage" },
   { href: "/admin/audit", label: "Audit log", icon: "audit", section: "Administration", permission: "audit:view" },
@@ -25,11 +27,14 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const user = await requireUser();
   const settings = await getSettings();
   const items = NAV.filter((i) => !i.permission || can(user.role, i.permission)).map(({ permission: _p, ...rest }) => rest);
+  const pending = can(user.role, "users:manage") ? await pendingCount() : 0;
+  const badges: Record<string, number> = pending ? { "/admin": pending, "/admin/users": pending } : {};
 
   return (
     <div className="min-h-dvh">
       <AppNav
         items={items}
+        badges={badges}
         churchName={settings.shortName || settings.churchName}
         footer={
           <div className="flex items-center gap-3 px-2 text-white">
